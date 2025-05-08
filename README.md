@@ -80,20 +80,16 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 	Here we also presents several transformed features frequently selected.
 	- last_fico_range_low: Lower bound of the borrower's FICO score range reported in the most recent credit report.
-
-	![Transformed last_fico_range_low](Results/transformed_feature - last_fico_range_low.png)
+	![Transformed last_fico_range_low](Results/transformed_feature-last_fico_range_low.png)
 
 	- sub_grade: Credit rating ranging from A1 (highest) to G5 (lowest) which is converted into 1 to 35.
-
-	![Transformed sub_grade](Results/transformed_feature - sub_grade.png)
+	![Transformed sub_grade](Results/transformed_feature-sub_grade.png)
 
 	- dti: Total monthly debt payments divided by monthly income.
-
-	![Transformed dti](Results/transformed_feature - dti.png)
+	![Transformed dti](Results/transformed_feature-dti.png)
 
 	- loan_amnt: The total amount of the loan issued to the borrower.
-
-	![Transformed loan_amnt](Results/transformed_feature - loan_amnt.png)
+	![Transformed loan_amnt](Results/transformed_feature-loan_amnt.png)
 	
 	These plots illustrate how spline-based logistic transformation captures the nonlinear relationship between individual features and default probability.
 
