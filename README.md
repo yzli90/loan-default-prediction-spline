@@ -74,10 +74,31 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 	For each numerical feature, we compute the average of its 5-fold cross-validated AUC scores across all available years. The figure below shows the top features ranked by their mean AUC, providing insight into which features consistently exhibit strong predictive power.
 	![Top AUC Features](Results/feature_importance.png)
+	
 	We also track how often each feature is selected across years. The figure below shows the top 10 features with the highest selection frequency, highlighting those that consistently pass both performance and multicollinearity criteria.
-	...
+	![Most Frequent Features](Results/feature_frequencies.png)
 
-	(Then, presents graphs of original features vs transformed features (model intepretted default prob). Comments on them and explain about the approach's ability for interpretility of features.)
+	Here we also presents several transformed features frequently selected.
+	- last_fico_range_low: Lower bound of the borrower's FICO score range reported in the most recent credit report.
+	![Transformed last_fico_range_low](Results/transformed_feature-last_fico_range_low.png)
+
+	- sub_grade: Credit rating ranging from A1 (highest) to G5 (lowest) which is converted into 1 to 35.
+	![Transformed sub_grade](Results/transformed_feature-sub_grade.png)
+
+	- dti: Total monthly debt payments divided by monthly income.
+	![Transformed dti](Results/transformed_feature-dti.png)
+
+	- loan_amnt: The total amount of the loan issued to the borrower.
+	![Transformed loan_amnt](Results/transformed_feature-loan_amnt.png)
+	
+	These plots illustrate how spline-based logistic transformation captures the nonlinear relationship between individual features and default probability.
+
+	For example, `last_fico_range_low` shows a clear monotonic decreasing relationship with default risk, aligning with the intuition that higher credit scores indicate lower risk. Similarly, `sub_grade`, after being ordinally encoded, exhibits a smooth increasing trend in estimated default probability, which preserves the inherent credit ranking.
+
+	In contrast, `loan_amnt` and `dti` demonstrate more complex patterns. For `loan_amnt`, the default risk increases in the lower to mid-range but slightly flattens or even reverses at higher amounts, possibly reflecting stricter underwriting for larger loans. For `dti`, the transformed curve is smooth and increasing, matching the expectation that higher debt burdens correspond to greater credit risk.
+
+	These feature-specific transformations are learned in a supervised manner, allowing the model to encode nonlinear predictive signals without imposing rigid assumptions. Importantly, the resulting transformed features are bounded, interpretable, and visualizable—each curve can be understood as the model’s best estimate of default probability as a function of a single input variable, enhancing both transparency and auditability of the modeling process.
+
 
 6. **Model Training & Evaluation**
 
