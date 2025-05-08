@@ -71,6 +71,7 @@ This section outlines the end-to-end modeling workflow, including data processin
    The selected features from year $t$ are then used to train models that predict outcomes in year $t+1$, preventing any lookahead bias in both the transformation and selection processes.
 
 4. **Feature Importance**
+
 	For each numerical feature, we compute the average of its 5-fold cross-validated AUC scores across all available years. The figure below shows the top features ranked by their mean AUC, providing insight into which features consistently exhibit strong predictive power.
 	![Top AUC Features](Results/feature_importance.png)
 	We also track how often each feature is selected across years. The figure below shows the top 10 features with the highest selection frequency, highlighting those that consistently pass both performance and multicollinearity criteria.
@@ -78,7 +79,7 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 	(Then, presents graphs of original features vs transformed features (model intepretted default prob). Comments on them and explain about the approach's ability for interpretility of features.)
 
-5. **Model Training & Evaluation**
+6. **Model Training & Evaluation**
 
    - Models: Logistic Regression, XGBoost
    - Metrics: AUC and Accuracy
