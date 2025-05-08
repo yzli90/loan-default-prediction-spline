@@ -11,60 +11,79 @@ We compare the performance of models using these transformed features against mo
 
 ## Supervised Spline Feature Transformation
 
-Let $x \in \mathbb{R}$ be a numerical feature and $y \in \{0, 1\}$ indicate loan default where .
+Let $x \in \mathbb{R}$ be a numerical feature and $y \in \{0, 1\}$ indicate loan default where $y=1$ represents a "charged off" loan
 
 We apply the following transformation for each feature:
 
 1. **Cubic Spline Basis Expansion**  
-   We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $20\%,40\%,60\%,80\%$ $(K=5)$. Each spline basis function $B_k(x)$ is defined as a cubic polynomial within its corresponding subinterval.
-   These basis functions are constructed to ensure $C^2$ continuity: that is, the resulting spline is continuous, and has continuous first and second derivatives across all knot points.
+   We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $20\%,40\%,60\%,80\%$. Each spline basis function $B_k(x)$ is defined as either a standard polynomial or a truncated cubic function. Specifically, for knots $\kappa_1 < \kappa_2 < \ldots < \kappa_4$, the basis has the form:
+   $$
+   \begin{aligned}
+   B_1(x) &= 1 \quad \text{(optional; excluded if no intercept)} \\
+   B_2(x) &= x \\
+   B_3(x) &= x^2 \\
+   B_4(x) &= x^3 \\
+   B_{4 + j}(x) &= (x - \kappa_j)^3_+ = \max(0, x - \kappa_j)^3, \quad j = 1, \dots, 4
+   \end{aligned}
+   $$
+ This basis has dimension $K = 8$ if intercept is included, or $K = 7$ otherwise ensures that the resulting spline is continuous and has continuous first and second derivatives across all knot locations (i.e., $C^2$ smoothness).
 
-2. **Logistic Regression on Spline Basis of a Single Feature**  
-   Fit a logistic model:
-   \[
-   P(y = 1 \mid x) = \sigma\left( \sum_{k=1}^{K} \beta_k B_k(x) \right)
-   \]
-   where \( \sigma(z) = \frac{1}{1 + e^{-z}} \)
+2. **Logistic Regression on the Spline Basis of a Single Feature**  
+   For a logistic model using the spline basis of a single feature $x$, we have
+   $$
+   P(y = 1 \mid x) = \sigma\left( \beta_0 + \sum_{k=1}^{K} \beta_k B_k(x) \right)
+   $$
+   where $\sigma(z) = \frac{1}{1 + e^{-z}}$ is the sigmoid function and the intercept term of the basis is excluded. We maximize the log-likelihood with respect to the parameter vector $\boldsymbol{\beta} = \{\beta_0, \ldots, \beta_K\}$ and obtain the fitted coefficients $\hat{\boldsymbol{\beta}}$.
+
 
 3. **Transformed Feature**  
-   The transformed feature \( \tilde{x} \) is defined as:
-   \[
-   \tilde{x} := \hat{P}(y = 1 \mid x)
-   \]
-   This captures both nonlinearity and supervised signal from \( x \).
+   The transformed feature $\tilde{x}$ is then defined as the model's fitted probability for $x$:
+   $$
+   \tilde{x} := \hat{P}(y = 1 \mid x) = \sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)
+   $$
+   where $\hat{\boldsymbol{\beta}} = \{\hat{\beta}_0, \ldots, \hat{\beta}_K\}$ are the estimated coefficients. 
+
+	This transformation captures both the nonlinear effect of $x$ on the target variable and the supervised signal from $y$. Unlike unsupervised methods such as PCA or standard polynomial expansions, it is explicitly learned with respect to the classification objective. As a result, $\tilde{x}$ represents the estimated probability of default based solely on the single feature $x$, yielding a meaningful and interpretable output bounded between 0 and 1.
+	
+	Conceptually, it compresses the nonlinear relationship between a single feature and the target into a scalar summary that is directly usable by downstream models. It can be viewed as a supervised embedding of each feature into a one-dimensional representation optimized for classification tasks.
 
 ## Project Pipeline
-
+This section outlines the end-to-end modeling workflow, including data processing, feature transformation, selection, and predictive modeling.
 1. **Data Preparation**
 
-   - LendingClub data (2007–2018) from Kaggle
-   - Filter for "Fully Paid" and "Charged Off"
-   - Split into `loan_YYYY.csv` and store in `Raw data/`
+  - LendingClub data (2007–2018) from Kaggle
+  - Filter for "Fully Paid" and "Charged Off"
+  - Split into `loan_YYYY.csv` and store in `Raw data/`
 
 2. **Feature Engineering & Transformation**
 
-   - Clean, encode, and impute features
-   - For each numerical feature:
-     - Create cubic spline basis
-     - Fit logistic model to predict default
-     - Use predicted probability as transformed feature
+- Clean, encode, and impute features. The processed dataset is then saved as `processed_YYYY.csv` under the `Processed data/` directory.
+- For each numerical feature:  
+  - Create a cubic spline basis  
+  - Fit a logistic model to predict default  
+  - Use the predicted probability as the transformed feature  
+- Once each logistic model is fitted on year $t$, we use the estimated coefficients to transform the corresponding feature for both year $t$ (in-sample) and year $t+1$ (out-of-sample). The transformed features from year $t$ are used for feature selection, while those from year $t+1$ are used for future prediction.
 
 3. **Feature Selection**
 
-   - 5-fold CV AUC ranking
-   - Drop highly collinear features via VIF
+	Feature selection is conducted using spline-transformed features from year $t$. We rank features based on their 5-fold cross-validation AUC scores and apply a recursive variance inflation factor (VIF) filter to remove highly collinear variables. Specifically, features with VIF greater than 10 are iteratively removed, while ensuring that at least three features remain.
 
-4. **Model Training & Evaluation**
+   The selected features from year $t$ are then used to train models that predict outcomes in year $t+1$, preventing any lookahead bias in both the transformation and selection processes.
 
-   - Compare raw vs transformed features
+4. **Feature Importance**
+	For each numerical feature, we compute the average of its 5-fold cross-validated AUC scores across all available years. The figure below shows the top features ranked by their mean AUC, providing insight into which features consistently exhibit strong predictive power.
+	![Top AUC Features](results/top_auc_features.png)
+	We also track how often each feature is selected across years. The figure below shows the top 10 features with the highest selection frequency, highlighting those that consistently pass both performance and multicollinearity criteria.
+	...
+
+	(Then, presents graphs of original features vs transformed features (model intepretted default prob). Comments on them and explain about the approach's ability for interpretility of features.)
+
+5. **Model Training & Evaluation**
+
    - Models: Logistic Regression, XGBoost
-   - Train on year \( t \), test on year \( t+1 \)
    - Metrics: AUC and Accuracy
+   (Graphs of comparison and comment)
 
-5. **Visualization**
-
-   - Plot transformation curves
-   - Visualize in-sample and out-of-sample AUC trends
 
 ## Results Summary
 
@@ -92,4 +111,3 @@ python src/data_process.py
 python src/features.py
 python src/model.py
 python src/visualization.py
-
