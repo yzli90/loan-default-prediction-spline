@@ -80,14 +80,11 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 	Here we also presents several transformed features frequently selected.
 	- last_fico_range_low: Lower bound of the borrower's FICO score range reported in the most recent credit report.
-	![Transformed last_fico_range_low](Results/transformed_feature-last_fico_range_low.png)
-
+![Transformed last_fico_range_low](Results/transformed_feature-last_fico_range_low.png)
 	- sub_grade: Credit rating ranging from A1 (highest) to G5 (lowest) which is converted into 1 to 35.
 	![Transformed sub_grade](Results/transformed_feature-sub_grade.png)
-
 	- dti: Total monthly debt payments divided by monthly income.
 	![Transformed dti](Results/transformed_feature-dti.png)
-
 	- loan_amnt: The total amount of the loan issued to the borrower.
 	![Transformed loan_amnt](Results/transformed_feature-loan_amnt.png)
 	
@@ -102,10 +99,20 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 6. **Model Training & Evaluation**
 
-   - Models: Logistic Regression, XGBoost
-   - Metrics: AUC and Accuracy
-   (Graphs of comparison and comment)
+	We evaluate model performance using two classifiers: logistic regression (with L2 regularization) and XGBoost (with default parameters). For each year $t$, we train a model using features from year $t$ and test its performance on data from year $t+1$. Both raw and spline-transformed features are used for comparison.
 
+	Two metrics are used for evaluation:
+	- AUC (Area Under the ROC Curve), which measures ranking quality
+	- Accuracy rate, which reflects threshold-based classification performance
+
+	The plots below compare performance across years for all model-feature combinations, separated into in-sample (training year) and out-of-sample (next year) settings.
+	![AUC comparison](results/auc_comparisons.png)
+	![Accuracy comparison](results/accuracy_comparisons.png)
+
+	The results show that spline-transformed features generally lead to better or comparable performance, especially in out-of-sample AUC. This improvement is more noticeable for logistic regression, as the transformation helps capture nonlinear patterns that a linear model cannot express directly. XGBoost, being a nonlinear tree-based model, benefits less but still maintains stable gains.
+
+	The consistent upward trend in out-of-sample AUC and accuracy over the years suggests that the transformation pipeline improves feature robustness and generalizability across time.
+   
 
 ## Results Summary
 
