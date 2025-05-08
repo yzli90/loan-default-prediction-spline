@@ -106,8 +106,8 @@ This section outlines the end-to-end modeling workflow, including data processin
 	- Accuracy rate, which reflects threshold-based classification performance
 
 	The plots below compare performance across years for all model-feature combinations, separated into in-sample (training year) and out-of-sample (next year) settings.
-	![AUC comparison](results/auc_comparisons.png)
-	![Accuracy comparison](results/accuracy_comparisons.png)
+	![AUC comparison](Results/auc_comparisons.png)
+	![Accuracy comparison](Results/accuracy_comparisons.png)
 
 	The results show that spline-transformed features generally lead to better or comparable performance, especially in out-of-sample AUC. This improvement is more noticeable for logistic regression, as the transformation helps capture nonlinear patterns that a linear model cannot express directly. XGBoost, being a nonlinear tree-based model, benefits less but still maintains stable gains.
 
