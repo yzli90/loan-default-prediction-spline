@@ -72,7 +72,7 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 4. **Feature Importance**
 	For each numerical feature, we compute the average of its 5-fold cross-validated AUC scores across all available years. The figure below shows the top features ranked by their mean AUC, providing insight into which features consistently exhibit strong predictive power.
-	![Top AUC Features](results/top_auc_features.png)
+	![Top AUC Features](Results/feature_cv_auc.png)
 	We also track how often each feature is selected across years. The figure below shows the top 10 features with the highest selection frequency, highlighting those that consistently pass both performance and multicollinearity criteria.
 	...
 
