@@ -1,0 +1,12 @@
+,0,1,2,3,4
+2007,installment,dti,earliest_cr_line_age,sub_grade,emp_length
+2008,installment,last_fico_range_low,dti,sub_grade,
+2009,last_fico_range_low,sub_grade,,,
+2010,annual_inc,last_fico_range_low,sub_grade,,
+2011,annual_inc,last_fico_range_low,loan_amnt,sub_grade,
+2012,last_fico_range_low,loan_amnt,dti,sub_grade,
+2013,annual_inc,last_fico_range_low,dti,sub_grade,
+2014,annual_inc,last_fico_range_low,dti,sub_grade,
+2015,last_fico_range_low,loan_amnt,dti,sub_grade,
+2016,last_fico_range_low,dti,annual_inc,open_rv_24m,sub_grade
+2017,last_fico_range_low,loan_amnt,dti,all_util,sub_grade
