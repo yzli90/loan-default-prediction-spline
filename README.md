@@ -18,20 +18,24 @@ We apply the following transformation for each feature:
 1. **Cubic Spline Basis Expansion**  
    We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $20\%,40\%,60\%,80\%$. Each spline basis function $B_k(x)$ is defined as either a standard polynomial or a truncated cubic function. Specifically, for knots $\kappa_1 < \kappa_2 < \ldots < \kappa_4$, the basis has the form:
    $B_1(x) = 1 \quad \text{(optional; excluded if no intercept)}$
+   
    $B_2(x) = x$
+   
    $B_3(x) = x^2$
+   
    $B_4(x) = x^3$
+   
    $B_{4 + j}(x) = (x - \kappa_j)^3_+ = \max(0, x - \kappa_j)^3, \quad j = 1, \dots, 4$
 
 	This basis has dimension $K = 8$ if intercept is included, or $K = 7$ otherwise ensures that the resulting spline is continuous and has continuous first and second derivatives across all knot locations (i.e., $C^2$ smoothness).
 
-2. **Logistic Regression on the Spline Basis of a Single Feature**  
+3. **Logistic Regression on the Spline Basis of a Single Feature**  
    For a logistic model using the spline basis of a single feature $x$, we have
    $P(y = 1 \mid x) = \sigma\left( \beta_0 + \sum_{k=1}^{K} \beta_k B_k(x) \right)$
    where $\sigma(z) = \frac{1}{1 + e^{-z}}$ is the sigmoid function and the intercept term of the basis is excluded. We maximize the log-likelihood with respect to the parameter vector $\boldsymbol{\beta} = \{\beta_0, \ldots, \beta_K\}$ and obtain the fitted coefficients $\hat{\boldsymbol{\beta}}$.
 
 
-3. **Transformed Feature**  
+4. **Transformed Feature**  
    The transformed feature $\tilde{x}$ is then defined as the model's fitted probability for $x$:
    $\tilde{x} := \hat{P}(y = 1 \mid x) = \sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)$
    where $\hat{\boldsymbol{\beta}} = \{\hat{\beta}_0, \ldots, \hat{\beta}_K\}$ are the estimated coefficients. 
