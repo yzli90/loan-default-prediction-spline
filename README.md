@@ -17,35 +17,41 @@ We apply the following transformation for each feature:
 
 1. **Cubic Spline Basis Expansion**  
    We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $20\%,40\%,60\%,80\%$. Each spline basis function $B_k(x)$ is defined as either a standard polynomial or a truncated cubic function. Specifically, for knots $\kappa_1 < \kappa_2 < \ldots < \kappa_4$, the basis has the form:
-   $$
-   \begin{aligned}
-   B_1(x) &= 1 \quad \text{(optional; excluded if no intercept)} \\
-   B_2(x) &= x \\
-   B_3(x) &= x^2 \\
-   B_4(x) &= x^3 \\
-   B_{4 + j}(x) &= (x - \kappa_j)^3_+ = \max(0, x - \kappa_j)^3, \quad j = 1, \dots, 4
-   \end{aligned}
-   $$
- This basis has dimension $K = 8$ if intercept is included, or $K = 7$ otherwise ensures that the resulting spline is continuous and has continuous first and second derivatives across all knot locations (i.e., $C^2$ smoothness).
+   $B_1(x) = 1 \quad \text{(optional; excluded if no intercept)}$
+   $B_2(x) = x$
+   $B_3(x) = x^2$
+   $B_4(x) = x^3$
+   $B_{4 + j}(x) = (x - \kappa_j)^3_+ = \max(0, x - \kappa_j)^3, \quad j = 1, \dots, 4$
+
+	This basis has dimension $K = 8$ if intercept is included, or $K = 7$ otherwise ensures that the resulting spline is continuous and has continuous first and second derivatives across all knot locations (i.e., $C^2$ smoothness).
 
 2. **Logistic Regression on the Spline Basis of a Single Feature**  
    For a logistic model using the spline basis of a single feature $x$, we have
-   $$
-   P(y = 1 \mid x) = \sigma\left( \beta_0 + \sum_{k=1}^{K} \beta_k B_k(x) \right)
-   $$
+   $P(y = 1 \mid x) = \sigma\left( \beta_0 + \sum_{k=1}^{K} \beta_k B_k(x) \right)$
    where $\sigma(z) = \frac{1}{1 + e^{-z}}$ is the sigmoid function and the intercept term of the basis is excluded. We maximize the log-likelihood with respect to the parameter vector $\boldsymbol{\beta} = \{\beta_0, \ldots, \beta_K\}$ and obtain the fitted coefficients $\hat{\boldsymbol{\beta}}$.
 
 
 3. **Transformed Feature**  
    The transformed feature $\tilde{x}$ is then defined as the model's fitted probability for $x$:
-   $$
-   \tilde{x} := \hat{P}(y = 1 \mid x) = \sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)
-   $$
+   $\tilde{x} := \hat{P}(y = 1 \mid x) = \sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)$
    where $\hat{\boldsymbol{\beta}} = \{\hat{\beta}_0, \ldots, \hat{\beta}_K\}$ are the estimated coefficients. 
 
 	This transformation captures both the nonlinear effect of $x$ on the target variable and the supervised signal from $y$. Unlike unsupervised methods such as PCA or standard polynomial expansions, it is explicitly learned with respect to the classification objective. As a result, $\tilde{x}$ represents the estimated probability of default based solely on the single feature $x$, yielding a meaningful and interpretable output bounded between 0 and 1.
 	
 	Conceptually, it compresses the nonlinear relationship between a single feature and the target into a scalar summary that is directly usable by downstream models. It can be viewed as a supervised embedding of each feature into a one-dimensional representation optimized for classification tasks.
+
+
+## AUC Maximization Objective
+
+The AUC measures the probability that a randomly chosen positive example is ranked higher than a randomly chosen negative one.
+
+The pairwise form of the AUC objective can be written as $\max_{\boldsymbol{\beta}} \sum_{(i, j): y_i = 1, y_j = 0} \mathbb{I}(f(x_i) > f(x_j))$.
+
+Since the indicator function $\mathbb{I}(\cdot)$ is non-differentiable, we approximate it using a smooth surrogate loss, such as the pairwise logistic loss 
+$\mathcal{L}(\boldsymbol{\beta}) = \sum_{(i, j): y_i = 1, y_j = 0} \log\left(1 + \exp\left( -\left(f(x_i) - f(x_j)\right) \right)\right)$,
+ where $f(x) = \boldsymbol{\beta}^\top x$ is the linear scoring function over transformed features.
+
+This objective is naturally aligned with ranking tasks and is particularly suitable for imbalanced classification problems such as loan default prediction. By optimizing AUC directly, we avoid the need to select thresholds and instead focus on relative risk ordering.
 
 
 ## Project Pipeline
@@ -125,17 +131,17 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 ## Future Extensions
 
-- To capture feature-level nonlinearity, one may apply cubic spline expansion directly to the original features within a logistic regression model. However, this leads to a significantly higher-dimensional model, as the number of basis terms increases rapidly with the number of features. While this may offer a better in-sample fit, it often results in severe overfitting, especially when the number of samples is limited.
+- To capture feature-level nonlinearity, one may apply cubic spline expansion directly to the original features within a logistic regression model. 
+	- However, this leads to a significantly higher-dimensional model, as the number of basis terms increases rapidly with the number of features. While this may offer a better in-sample fit, it often results in severe overfitting, especially when the number of samples is limited. 
+	- In contrast, our supervised spline-logistic transformation produces scalar outputs that preserve interpretability, avoid unnecessary dimension inflation, and maintain robustness across time—without requiring the use of highly complex models.
 
 - Use AUC-maximizing loss functions (e.g., pairwise logistic loss), which directly target the ranking objective:
 
-  $$
-  \sum_{(i,j): y_i = 1, y_j = 0} \log\left(1 + e^{-(f(x_i) - f(x_j))} \right)
-  $$
+  $\sum_{(i,j): y_i = 1, y_j = 0} \log\left(1 + e^{-(f(x_i) - f(x_j))} \right)$
 
   Compared to standard log-loss, this objective aligns better with AUC and is more robust to class imbalance. It also eliminates the need to select arbitrary classification thresholds.
 
-- Explore buffered AUC (bAUC) as a convex alternative to standard AUC optimization. The bAUC concept is derived from the Buffered Probability of Exceedance (bPOE), which is closely related to the Conditional Value-at-Risk (CVaR). The resulting optimization problem is convex and can be formulated as a linear program, without requiring surrogate approximations of the AUC.
+- Explore buffered AUC (bAUC) as an alternative to standard AUC optimization. The bAUC concept is derived from the Buffered Probability of Exceedance (bPOE), which is closely related to the Conditional Value-at-Risk (CVaR). The resulting optimization problem is convex and can be formulated as a linear program, without requiring surrogate approximations of the AUC.
 
 
 ## How to Run
