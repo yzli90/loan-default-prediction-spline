@@ -174,7 +174,7 @@ This section outlines the end-to-end modeling workflow, including data processin
 
   Compared to standard log-loss, this objective aligns better with AUC and is more robust to class imbalance. It also eliminates the need to select arbitrary classification thresholds.
 
-- Explore buffered AUC (bAUC) as an alternative to standard AUC optimization. The bAUC concept is derived from the Buffered Probability of Exceedance (bPOE), which is closely related to the Conditional Value-at-Risk (CVaR). The resulting optimization problem is convex and can be formulated as a linear program, without requiring surrogate approximations of the AUC.
+- Explore buffered AUC (bAUC) as an alternative to standard AUC optimization. The bAUC concept is derived from the Buffered Probability of Exceedance (bPOE), which is closely related to the Conditional Value-at-Risk (CVaR). The resulting optimization problem is convex and can be formulated as a linear program, without requiring surrogate approximations of the objective.
 
 
 ## How to Run
