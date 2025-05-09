@@ -41,7 +41,7 @@ We apply the following transformation for each feature:
 5. **Transformed Feature**  
    The transformed feature $\tilde{x}$ is then defined as the model's fitted probability for $x$:
    
-   $\sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)$
+   $\hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x)$
    
    where $\hat{\boldsymbol{\beta}} = \{\hat{\beta}_0, \ldots, \hat{\beta}_K\}$ are the estimated coefficients. 
 
