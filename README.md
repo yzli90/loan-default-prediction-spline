@@ -9,40 +9,68 @@ Accurately predicting whether a loan will be fully paid or charged off is an imp
 
 We compare the performance of models using these transformed features against models using original features across multiple years and classifiers (Logistic Regression and XGBoost).
 
+## Code Structure Overview
+- **`data_process.py`**  
+Preprocesses raw LendingClub data year by year. Key steps include:
+	-   Filtering to loans that are either _Fully Paid_ or _Charged Off_.
+	    
+	-   Cleaning and transforming date fields and text entries.
+	    
+	-   Engineering features like `TotalGain`, `PvGain`, `LoanStatus`, and `LifeOfLoan`.
+	    
+	-   Handling missing values, label and one-hot encoding.
+	    
+	-   Outputs cleaned yearly datasets to `Processed data/processed_{year}.csv`.
+	
+- **`functions.py`**  
+This module contains all reusable functions and classes used throughout the project. Key components include:
+	-   `SplineLogisticFeatureTransformer`: Performs supervised feature transformation using cubic spline basis and logistic regression.
+	    
+	-   `cv_auc_compute`: Computes cross-validated AUC for feature evaluation.
+	    
+	-   `recursive_vif_elimination`: Applies VIF-based multicollinearity removal.
+
+- **`features.py`**  
+Performs year-by-year feature transformation and feature selection:
+	-   For continuous variables: uses spline + logistic transformation, then cross-validated AUC for selection.
+	    
+	-   For discrete variable groups: evaluates AUC using grouped dummy variables (e.g., `purpose`, `home_ownership`).
+	    
+	-   Applies VIF-based elimination to reduce multicollinearity.
+	    
+	-   Outputs selected features and their spline-transformed versions to CSV.
+
+- **`model.py`**  
+    The main driver script. It loops over yearly train-test splits of LendingClub data, trains models (logistic regression, XGBoost), and evaluates performance on both original and transformed features. Results are saved in CSV files (`auc.csv`, `accuracy_rate.csv`).
+    
+-   **`visualization.py`** 
+    Script for visualizing results and generating all figures.
+
 ## Supervised Spline Feature Transformation
 
-Let $x \in \mathbb{R}$ be a numerical feature and $y \in \{0, 1\}$ indicate loan default where $y=1$ represents a "charged off" loan
+Let $x \in \mathbb{R}$ be a numerical feature and $y \in \{0, 1\}$ indicate loan default where $y=1$ represents a "charged off" loan.
 
 We apply the following transformation for each feature:
 
 1. **Cubic Spline Basis Expansion**  
    We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $20\%,40\%,60\%,80\%$. Each spline basis function $B_k(x)$ is defined as either a standard polynomial or a truncated cubic function. Specifically, for knots $\kappa_1 < \kappa_2 < \ldots < \kappa_4$, the basis has the form:
-   
    $B_1(x) = 1 \quad \text{(optional; excluded if no intercept)}$
-   
    $B_2(x) = x$
-   
    $B_3(x) = x^2$
-   
    $B_4(x) = x^3$
-   
    $B_{4 + j}(x) = (x - \kappa_j)^3_+ = \max(0, x - \kappa_j)^3, \quad j = 1, \dots, 4$
 
 	This basis has dimension $K = 8$ if intercept is included, or $K = 7$ otherwise ensures that the resulting spline is continuous and has continuous first and second derivatives across all knot locations (i.e., $C^2$ smoothness).
 
-3. **Logistic Regression on the Spline Basis of a Single Feature**  
+2. **Logistic Regression on the Spline Basis of a Single Feature**  
    For a logistic model using the spline basis of a single feature $x$, we have
-   
    $P(y = 1 \mid x) = \sigma\left( \beta_0 + \sum_{k=1}^{K} \beta_k B_k(x) \right)$
-   
    where $\sigma(z) = \frac{1}{1 + e^{-z}}$ is the sigmoid function and the intercept term of the basis is excluded. We maximize the log-likelihood with respect to the parameter vector $\boldsymbol{\beta} = \{\beta_0, \ldots, \beta_K\}$ and obtain the fitted coefficients $\hat{\boldsymbol{\beta}}$.
 
 
-5. **Transformed Feature**  
+3. **Transformed Feature**  
    The transformed feature $\tilde{x}$ is then defined as the model's fitted probability for $x$:
-   
-   $z = \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x)$
-   
+   $\tilde{x} := \hat{P}(y = 1 \mid x) = \sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)$
    where $\hat{\boldsymbol{\beta}} = \{\hat{\beta}_0, \ldots, \hat{\beta}_K\}$ are the estimated coefficients. 
 
 	This transformation captures both the nonlinear effect of $x$ on the target variable and the supervised signal from $y$. Unlike unsupervised methods such as PCA or standard polynomial expansions, it is explicitly learned with respect to the classification objective. As a result, $\tilde{x}$ represents the estimated probability of default based solely on the single feature $x$, yielding a meaningful and interpretable output bounded between 0 and 1.
