@@ -11,13 +11,15 @@ xgb_model = XGBClassifier(objective='binary:logistic', eval_metric='auc', n_jobs
 auc = pd.DataFrame(
     index=['Logistic (train)', 'Logistic (test)', 'Logistic_spline (train)', 'Logistic_spline (test)',
            'XGboost (train)', 'XGboost (test)', 'XGboost_spline (train)', 'XGboost_spline (test)'],
-    # , 'XGboost (train)', 'XGboost (test)', 'XGboost_spline (train)', 'XGboost_spline (test)'
+    # ,
+    # , 'AUC_max (train)', 'AUC_max (test)', 'AUC_max_spline (train)', 'AUC_max_spline (test)'
     columns=years, dtype=float
 )
 accuracy_rate = pd.DataFrame(
     index=['Logistic (train)', 'Logistic (test)', 'Logistic_spline (train)', 'Logistic_spline (test)',
            'XGboost (train)', 'XGboost (test)', 'XGboost_spline (train)', 'XGboost_spline (test)'],
-    # , 'XGboost (train)', 'XGboost (test)', 'XGboost_spline (train)', 'XGboost_spline (test)'
+    # ,
+    # , 'AUC_max (train)', 'AUC_max (test)', 'AUC_max_spline (train)', 'AUC_max_spline (test)'
     columns=years, dtype=float
 )
 
@@ -57,6 +59,27 @@ for yr0, yr1 in zip(years[:-1], years[1:]):
     auc.loc['Logistic_spline (test)', yr1] = roc_auc_score(y_spline_test, y_pred_prob_logit)
     accuracy_rate.loc['Logistic_spline (test)', yr1] = accuracy_score(y_spline_test, y_pred_logit)
 
+    # # AUC maximization
+    # auc_model = train_pairwise_loss(x_train, y_train, epochs=100, lr=1e-3)
+    # y_pred_prob_auc = expit(predict(auc_model, x_train))
+    # y_pred_auc = (y_pred_prob_auc > 0.5).astype(int)
+    # auc.loc['AUC_max (train)', yr0] = roc_auc_score(y_train, y_pred_prob_auc)
+    # accuracy_rate.loc['AUC_max (train)', yr0] = accuracy_score(y_train, y_pred_auc)
+    # y_pred_prob_auc = expit(predict(auc_model, x_test))
+    # y_pred_auc = (y_pred_prob_auc > 0.5).astype(int)
+    # auc.loc['AUC_max (test)', yr1] = roc_auc_score(y_test, y_pred_prob_auc)
+    # accuracy_rate.loc['AUC_max (test)', yr1] = accuracy_score(y_test, y_pred_auc)
+    #
+    # auc_model = train_pairwise_loss(x_spline_train, y_spline_train, lr=1e-3)
+    # y_pred_prob_auc = expit(predict(auc_model, x_spline_train))
+    # y_pred_auc = (y_pred_prob_auc > 0.5).astype(int)
+    # auc.loc['AUC_max_spline (train)', yr0] = roc_auc_score(y_spline_train, y_pred_prob_auc)
+    # accuracy_rate.loc['AUC_max_spline (train)', yr0] = accuracy_score(y_spline_train, y_pred_auc)
+    # y_pred_prob_auc = expit(predict(auc_model, x_spline_test))
+    # y_pred_auc = (y_pred_prob_auc > 0.5).astype(int)
+    # auc.loc['AUC_max_spline (test)', yr1] = roc_auc_score(y_spline_test, y_pred_prob_auc)
+    # accuracy_rate.loc['AUC_max_spline (test)', yr1] = accuracy_score(y_spline_test, y_pred_auc)
+
     # XGBoost
     xgb_model.fit(x_train, y_train)
     y_pred_prob_xgb = xgb_model.predict_proba(x_train)[:, 1]
@@ -81,7 +104,8 @@ for yr0, yr1 in zip(years[:-1], years[1:]):
     elapsed_time = time.time() - start_time
     print(f"Finished in {elapsed_time:.2f} seconds.")
 
-auc.to_csv('auc.csv', header=True, index=True)
-accuracy_rate.to_csv('accuracy_rate.csv', header=True, index=True)
+auc.to_csv('Results/auc.csv', header=True, index=True)
+accuracy_rate.to_csv('Results/accuracy_rate.csv', header=True, index=True)
+
 
 

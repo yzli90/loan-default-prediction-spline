@@ -1,6 +1,9 @@
 #%%
 import pandas as pd
 import numpy as np
+# import torch
+# import torch.nn as nn
+# import torch.optim as optim
 from patsy.highlevel import dmatrix
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
@@ -103,4 +106,83 @@ def recursive_vif_elimination(x, threshold=10.0, min_features=5):
         dropped.append(drop_feature)
 
     return x, dropped, vif
+
+
+# class LinearScorer(nn.Module):
+#     def __init__(self, input_dim):
+#         super().__init__()
+#         self.linear = nn.Linear(input_dim, 1)  # f(x) = w^T x + b
+#
+#     def forward(self, x):
+#         return self.linear(x).squeeze(1)  # shape: (n,)
+#
+#
+# def pairwise_hinge_loss(scores, labels):
+#     pos_idx = (labels == 1).nonzero(as_tuple=True)[0]
+#     neg_idx = (labels == 0).nonzero(as_tuple=True)[0]
+#     if len(pos_idx) == 0 or len(neg_idx) == 0:
+#         return torch.tensor(0.0, requires_grad=True)
+#     pos_scores = scores[pos_idx]
+#     neg_scores = scores[neg_idx]
+#     diffs = - (pos_scores[:, None] - neg_scores[None, :])  # shape: (n_pos, n_neg)
+#     losses = torch.clamp(diffs, min=0)
+#     return losses.mean()
+#
+#
+# def pairwise_logistic_loss(scores, labels):
+#     pos_idx = (labels == 1).nonzero(as_tuple=True)[0]
+#     neg_idx = (labels == 0).nonzero(as_tuple=True)[0]
+#     if len(pos_idx) == 0 or len(neg_idx) == 0:
+#         return torch.tensor(0.0, requires_grad=True)
+#     pos_scores = scores[pos_idx]
+#     neg_scores = scores[neg_idx]
+#     diffs = pos_scores[:, None] - neg_scores[None, :]
+#     losses = torch.log1p(torch.exp(-diffs))
+#     return losses.mean()
+#
+#
+# def train_pairwise_loss(X_train, y_train, epochs=1000, lr=1e-3, early_stop_rounds=10, tol=1e-5):
+#     X_train, y_train = X_train.values, y_train.values
+#     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+#     y_train_tensor = torch.tensor(y_train, dtype=torch.int64)
+#
+#     model = LinearScorer(input_dim=X_train.shape[1])
+#     optimizer = optim.Adam(model.parameters(), lr=lr)
+#
+#     best_loss = float('inf')
+#     no_improve_rounds = 0
+#
+#     for epoch in range(epochs):
+#         model.train()
+#         scores = model(X_train_tensor)
+#         loss = pairwise_logistic_loss(scores, y_train_tensor)
+#
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
+#
+#         # print(f"Epoch {epoch+1}/{epochs} | Loss: {loss.item():.6f}")
+#
+#         if best_loss - loss.item() > tol:
+#             best_loss = loss.item()
+#             no_improve_rounds = 0
+#         else:
+#             no_improve_rounds += 1
+#             if no_improve_rounds >= early_stop_rounds:
+#                 print(f"Early stopping at epoch {epoch+1} | Best Loss: {best_loss:.6f}")
+#                 break
+#
+#     return model
+#
+#
+# def predict(model, X):
+#     X = X.values
+#     model.eval()
+#     X_tensor = torch.tensor(X, dtype=torch.float32)
+#     with torch.no_grad():
+#         return model(X_tensor).numpy()
+
+
+
+
 

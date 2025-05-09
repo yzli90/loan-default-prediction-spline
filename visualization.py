@@ -1,10 +1,11 @@
 #%%
 import matplotlib.pyplot as plt
 import pandas as pd
+from collections import Counter
 #%% Compare performance
 # Read
-auc = pd.read_csv('auc.csv', index_col=0)
-accuracy_rate = pd.read_csv('accuracy_rate.csv', index_col=0)
+auc = pd.read_csv('Results/auc.csv', index_col=0)
+accuracy_rate = pd.read_csv('Results/accuracy_rate.csv', index_col=0)
 
 # Figure 1: AUC subplot（In-sample vs Out-of-sample）
 fig1, axes1 = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
@@ -25,6 +26,7 @@ for ax in axes1:
     ax.legend()
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.savefig("Results/auc_comparisons.png")
 
 # Figure 2: Accuracy subplot（In-sample vs Out-of-sample）
 fig2, axes2 = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
@@ -45,6 +47,38 @@ for ax in axes2:
     ax.legend()
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.savefig("Results/accuracy_comparisons.png")
+#%% Feature importance
+auc_df = pd.read_csv("Results/feature_cv_auc.csv", index_col=0)
+auc_df['mean_auc'] = auc_df.mean(axis=1, skipna=True)
+top_features = auc_df['mean_auc'].sort_values(ascending=False).head(10)
+
+plt.figure(figsize=(8, 6))
+top_features.sort_values().plot(kind='barh', color='steelblue')
+plt.xlabel('Mean CV AUC')
+plt.title('Top 10 Features by Mean CV AUC')
+plt.grid(True, axis='x')
+plt.tight_layout()
+plt.savefig("Results/feature_importance.png")
+#%% Feature selected frequency
+df = pd.read_csv("Results/selected_features_by_year.csv", index_col=0)
+
+# Flatten all selected feature names into a list
+all_selected = df.values.flatten()
+all_selected = [feat for feat in all_selected if pd.notna(feat)]
+
+# Count frequency
+feature_counts = Counter(all_selected)
+top_counts = pd.Series(feature_counts).sort_values(ascending=False).head(10)
+
+# Plot
+plt.figure(figsize=(8, 6))
+top_counts.sort_values().plot(kind='barh', color='darkorange')
+plt.xlabel('Number of Years Selected')
+plt.title('Top 10 Features by Selection Frequency')
+plt.grid(True, axis='x')
+plt.tight_layout()
+plt.savefig("Results/feature_frequencies.png")
 #%% Spline plot
 yr = 2015
 df = pd.read_csv(f"Processed data/processed_{yr}.csv", index_col=None)
@@ -53,7 +87,7 @@ df_spline = pd.read_csv(f"Processed data/selected(transformed)_train_{yr}.csv", 
 x, x_spline = df.drop(columns=['LoanStatus']), df_spline.drop(columns=['LoanStatus'])
 y, y_spline = df['LoanStatus'], df_spline['LoanStatus']
 
-features_picked = x_spline.columns.tolist()
+features_picked = list(set(top_counts.index[:5]) & set(x_spline.columns))
 for col in features_picked:
     plt.figure()
     x_sorted = x[col].sort_values(ascending=True)
@@ -72,6 +106,7 @@ for col in features_picked:
     plt.title('Feature Transformation via Spline + Logistic Regression')
     plt.legend()
     plt.grid(True)
+    plt.savefig(f"Results/transformed_feature - {col}.png")
 
 
 

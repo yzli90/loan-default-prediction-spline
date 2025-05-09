@@ -2,6 +2,8 @@
 import time
 from functions import *
 from sklearn.preprocessing import StandardScaler
+from collections import defaultdict
+
 
 categoricals = [
     'term', 'home_ownership_MORTGAGE', 'home_ownership_OWN', 'home_ownership_RENT', 'home_ownership_OTHER',
@@ -22,8 +24,13 @@ group_dict = {
         'purpose_other', 'purpose_small_business', 'purpose_vacation', 'purpose_wedding'
     ]
 }
+
 analytics = ['TotalGain', 'PvGain', 'LifeOfLoan']
 years = list(range(2007, 2018+1))
+scaler = StandardScaler()
+year_feature_auc = defaultdict(dict)
+selected_features_by_year = {}
+
 for yr0, yr1 in zip(years[:-1], years[1:]):
     print((yr0, yr1))
     start_time = time.time()
@@ -65,6 +72,7 @@ for yr0, yr1 in zip(years[:-1], years[1:]):
             df_splines_test[col] = transformer.transform(x_test)
 
             aucs.loc[col] = cv_auc_compute(df_splines_train[col].values, df_train['LoanStatus'].values)
+            year_feature_auc[col][yr0] = aucs.loc[col]
     features_cont_picked = aucs.index[aucs >= 0.55].tolist()
 
     features_discrete_picked = []
@@ -87,6 +95,7 @@ for yr0, yr1 in zip(years[:-1], years[1:]):
     )
     features_picked = list(set(features_picked) - set(features_dropped))
     features_cont_picked = list(set(features_cont_picked) - set(features_dropped))
+    selected_features_by_year[yr0] = features_picked
     # features_discrete_picked = list(set(features_discrete_picked) - set(features_dropped))
     pd.concat([df_splines_train[['LoanStatus']], df_splines_train[features_picked]], axis=1).to_csv(
         f"Processed data/selected(transformed)_train_{yr0}.csv", header=True, index=False
@@ -94,7 +103,7 @@ for yr0, yr1 in zip(years[:-1], years[1:]):
     pd.concat([df_splines_test[['LoanStatus']], df_splines_test[features_picked]], axis=1).to_csv(
         f"Processed data/selected(transformed)_test_{yr1}.csv", header=True, index=False
     )
-    scaler = StandardScaler()
+
     pd.concat(
         [df_train[['LoanStatus']], pd.DataFrame(
             scaler.fit_transform(df_train[features_cont_picked]), columns=features_cont_picked, index=df_train.index
@@ -110,8 +119,10 @@ for yr0, yr1 in zip(years[:-1], years[1:]):
     print(vif)
     print(f"Finished in {elapsed_time:.2f} seconds.")
 
-
-
+auc_df = pd.DataFrame.from_dict(year_feature_auc, orient='index')
+auc_df.to_csv("Results/feature_cv_auc.csv")
+selected_df = pd.DataFrame.from_dict(selected_features_by_year, orient='index')
+selected_df.to_csv("Results/selected_features_by_year.csv")
 
 
 
