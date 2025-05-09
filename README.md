@@ -47,6 +47,7 @@ We apply the following transformation for each feature:
 	
 	Conceptually, it compresses the nonlinear relationship between a single feature and the target into a scalar summary that is directly usable by downstream models. It can be viewed as a supervised embedding of each feature into a one-dimensional representation optimized for classification tasks.
 
+
 ## Project Pipeline
 This section outlines the end-to-end modeling workflow, including data processing, feature transformation, selection, and predictive modeling.
 1. **Data Preparation**
@@ -100,7 +101,7 @@ This section outlines the end-to-end modeling workflow, including data processin
 6. **Model Training & Evaluation**
 
 	We evaluate model performance using two classifiers: logistic regression (with L2 regularization) and XGBoost (with default parameters). For each year $t$, we train a model using features from year $t$ and test its performance on data from year $t+1$. Both raw and spline-transformed features are used for comparison.
-
+	
 	Two metrics are used for evaluation:
 	- AUC (Area Under the ROC Curve), which measures ranking quality
 	- Accuracy rate, which reflects threshold-based classification performance
@@ -116,18 +117,26 @@ This section outlines the end-to-end modeling workflow, including data processin
 
 ## Results Summary
 
-- Transformed features generally outperform raw features in out-of-sample AUC.
-- Improvement is more consistent with Logistic Regression.
-- Transformed features show smoother and more monotonic relations with the outcome variable.
+- Spline-transformed features generally outperform raw features in both out-of-sample AUC and accuracy rate, demonstrating their ability to enhance the predictive performance of downstream models—especially when using a limited number of features.
+- By using a cubic spline basis with supervised logistic fitting, each feature is transformed into a scalar that encodes compressed nonlinear predictive information.
+- The effect of each transformed feature on the outcome remains interpretable, as the model's response curve can be directly visualized and understood in terms of estimated default probability.
+
+
 
 ## Future Extensions
 
-- Use AUC-maximizing loss functions (e.g., pairwise logistic loss):
-  \[
+- To capture feature-level nonlinearity, one may apply cubic spline expansion directly to the original features within a logistic regression model. However, this leads to a significantly higher-dimensional model, as the number of basis terms increases rapidly with the number of features. While this may offer a better in-sample fit, it often results in severe overfitting, especially when the number of samples is limited.
+
+- Use AUC-maximizing loss functions (e.g., pairwise logistic loss), which directly target the ranking objective:
+
+  $$
   \sum_{(i,j): y_i = 1, y_j = 0} \log\left(1 + e^{-(f(x_i) - f(x_j))} \right)
-  \]
-- Extend to ensemble-based or neural network-based transformation pipelines.
-- Incorporate uncertainty estimation or calibration metrics.
+  $$
+
+  Compared to standard log-loss, this objective aligns better with AUC and is more robust to class imbalance. It also eliminates the need to select arbitrary classification thresholds.
+
+- Explore buffered AUC (bAUC) as a convex alternative to standard AUC optimization. The bAUC concept is derived from the Buffered Probability of Exceedance (bPOE), which is closely related to the Conditional Value-at-Risk (CVaR). The resulting optimization problem is convex and can be formulated as a linear program, without requiring surrogate approximations of the AUC.
+
 
 ## How to Run
 
