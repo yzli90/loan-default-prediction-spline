@@ -41,19 +41,6 @@ We apply the following transformation for each feature:
 	Conceptually, it compresses the nonlinear relationship between a single feature and the target into a scalar summary that is directly usable by downstream models. It can be viewed as a supervised embedding of each feature into a one-dimensional representation optimized for classification tasks.
 
 
-## AUC Maximization Objective
-
-The AUC measures the probability that a randomly chosen positive example is ranked higher than a randomly chosen negative one.
-
-The pairwise form of the AUC objective can be written as $\max_{\boldsymbol{\beta}} \sum_{(i, j): y_i = 1, y_j = 0} \mathbb{I}(f(x_i) > f(x_j))$.
-
-Since the indicator function $\mathbb{I}(\cdot)$ is non-differentiable, we approximate it using a smooth surrogate loss, such as the pairwise logistic loss 
-$\mathcal{L}(\boldsymbol{\beta}) = \sum_{(i, j): y_i = 1, y_j = 0} \log\left(1 + \exp\left( -\left(f(x_i) - f(x_j)\right) \right)\right)$,
- where $f(x) = \boldsymbol{\beta}^\top x$ is the linear scoring function over transformed features.
-
-This objective is naturally aligned with ranking tasks and is particularly suitable for imbalanced classification problems such as loan default prediction. By optimizing AUC directly, we avoid the need to select thresholds and instead focus on relative risk ordering.
-
-
 ## Project Pipeline
 This section outlines the end-to-end modeling workflow, including data processing, feature transformation, selection, and predictive modeling.
 1. **Data Preparation**
