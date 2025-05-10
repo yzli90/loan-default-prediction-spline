@@ -1,4 +1,3 @@
-
 # Loan Default Prediction with Supervised Spline Feature Transformation
 
 This project investigates the use of a supervised, nonlinear feature transformation approach based on cubic spline basis and logistic regression to improve loan default prediction. It is designed to handle nonlinear effects and enhance the information of features.
@@ -188,3 +187,7 @@ python src/data_process.py
 python src/features.py
 python src/model.py
 python src/visualization.py
+```
+
+## Reference
+[1]. Wei, X., Gotoh, J., and Uryasev, S. (2018). Peer-To-Peer Lending: Classification in the Loan Application Process. Risks, 6(4). https://doi.org/10.3390/risks6040129
