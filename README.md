@@ -4,7 +4,7 @@ This project investigates the use of a supervised, nonlinear feature transformat
 
 ## Motivation
 
-Accurately predicting whether a loan will be fully paid or charged off is an important task in credit risk modeling. This project utilized a transformation method by [1] where each numerical feature is nonlinearly mapped via cubic spline basis and fitted with a supervised logistic model to produce a probability-like transformed feature. The approach improve the information of a feature and consequently the prediction power of a model.
+Accurately predicting whether a loan will be fully paid or charged off is an important task in credit risk modeling. This project utilized a transformation method by [1] where each numerical feature is nonlinearly mapped via cubic spline basis and fitted with a supervised logistic model to produce a probability-like transformed feature. The approach improves the informational value of individual features and consequently the prediction power of a model.
 
 We compare the performance of models using these transformed features against models using original features across multiple years and classifiers (Logistic Regression and XGBoost).
 
@@ -14,8 +14,6 @@ Preprocesses raw LendingClub data year by year. Key steps include:
 	-   Filtering to loans that are either _Fully Paid_ or _Charged Off_.
 	    
 	-   Cleaning and transforming date fields and text entries.
-	    
-	-   Engineering features like `TotalGain`, `PvGain`, `LoanStatus`, and `LifeOfLoan`.
 	    
 	-   Handling missing values, label and one-hot encoding.
 	    
@@ -52,7 +50,7 @@ Let $x \in \mathbb{R}$ be a numerical feature and $y \in \{0, 1\}$ indicate loan
 We apply the following transformation for each feature:
 
 1. **Cubic Spline Basis Expansion**  
-   We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $20\%,40\%,60\%,80\%$. Each spline basis function $B_k(x)$ is defined as either a standard polynomial or a truncated cubic function. Specifically, for knots $\kappa_1 < \kappa_2 < \ldots < \kappa_4$, the basis has the form:
+   We expand $x$ into a set of spline basis functions $(B_1(x), B_2(x), \ldots, B_K(x))$ with degree $d=3$ (cubic) and with knots placed at empirical quantiles $0.2$, $0.4$, $0.6$, and $0.8$. Each spline basis function $B_k(x)$ is defined as either a standard polynomial or a truncated cubic function. Specifically, for knots $\kappa_1 < \kappa_2 < \ldots < \kappa_4$, the basis has the form:
    
    $B_1(x) = 1 \quad \text{(optional; excluded if no intercept)}$
    
@@ -64,9 +62,9 @@ We apply the following transformation for each feature:
    
    $B_{4 + j}(x) = (x - \kappa_j)^3_+ = \max(0, x - \kappa_j)^3, \quad j = 1, \dots, 4$
 
-	This basis has dimension $K = 8$ if intercept is included, or $K = 7$ otherwise ensures that the resulting spline is continuous and has continuous first and second derivatives across all knot locations (i.e., $C^2$ smoothness).
+	This basis (with degree 3 and four knots) produces $K = 8$ components if the intercept is included, or $K = 7$ otherwise. It ensures continuity and $C^2$ smoothness (i.e., continuous first and second derivatives) at each knot location.
 
-3. **Logistic Regression on the Spline Basis of a Single Feature**  
+2. **Logistic Regression on the Spline Basis of a Single Feature**  
    For a logistic model using the spline basis of a single feature $x$, we have
    
    $P(y = 1 \mid x) = \sigma\left( \beta_0 + \sum_{k=1}^{K} \beta_k B_k(x) \right)$
@@ -74,16 +72,16 @@ We apply the following transformation for each feature:
    where $\sigma(z) = \frac{1}{1 + e^{-z}}$ is the sigmoid function and the intercept term of the basis is excluded. We maximize the log-likelihood with respect to the parameter vector $\boldsymbol{\beta} = \{\beta_0, \ldots, \beta_K\}$ and obtain the fitted coefficients $\hat{\boldsymbol{\beta}}$.
 
 
-5. **Transformed Feature**  
+3. **Transformed Feature**  
    The transformed feature $\tilde{x}$ is then defined as the model's fitted probability for $x$:
    
-   $\tilde{x} := \hat{P}(y = 1 \mid x) = \sigma\left( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) \right)$
+   $\tilde{x} := \hat{P}(y = 1 \mid x) = \sigma( \hat{\beta}_0 + \sum_{k=1}^{K} \hat{\beta}_k B_k(x) )$
    
    where $\hat{\boldsymbol{\beta}} = \{\hat{\beta}_0, \ldots, \hat{\beta}_K\}$ are the estimated coefficients. 
 
-	This transformation captures both the nonlinear effect of $x$ on the target variable and the supervised signal from $y$. Unlike unsupervised methods such as PCA or standard polynomial expansions, it is explicitly learned with respect to the classification objective. As a result, $\tilde{x}$ represents the estimated probability of default based solely on the single feature $x$, yielding a meaningful and interpretable output bounded between 0 and 1.
+	This transformation learns how each feature relates to the target (loan default) in a flexible and supervised way. Instead of using unsupervised methods like PCA or polynomial expansion, it directly uses the default label to fit the relationship. The result is a new version of each feature—a number between 0 and 1—that represents the estimated probability of default based only on that feature. This value is easy to understand and can be used directly in other models.
 	
-	Conceptually, it compresses the nonlinear relationship between a single feature and the target into a scalar summary that is directly usable by downstream models. It can be viewed as a supervised embedding of each feature into a one-dimensional representation optimized for classification tasks.
+	Conceptually, it compresses the nonlinear relationship between a single feature and the target into a scalar summary that is directly usable by downstream models. It’s a compact and meaningful way to represent the information in each feature for classification.
 
 
 ## Project Pipeline
@@ -127,13 +125,13 @@ This section outlines the end-to-end modeling workflow, including data processin
 	- loan_amnt: The total amount of the loan issued to the borrower.
 	![Transformed loan_amnt](Results/transformed_feature-loan_amnt.png)
 	
-	These plots illustrate how spline-based logistic transformation captures the nonlinear relationship between individual features and default probability.
+	These plots illustrate how spline-based logistic transformation captures the nonlinear relationship between individual features and spline transformed features (estimated default probability).
 
 	For example, `last_fico_range_low` shows a clear monotonic decreasing relationship with default risk, aligning with the intuition that higher credit scores indicate lower risk. Similarly, `sub_grade`, after being ordinally encoded, exhibits a smooth increasing trend in estimated default probability, which preserves the inherent credit ranking.
 
 	In contrast, `loan_amnt` and `dti` demonstrate more complex patterns. For `loan_amnt`, the default risk increases in the lower to mid-range but slightly flattens or even reverses at higher amounts, possibly reflecting stricter underwriting for larger loans. For `dti`, the transformed curve is smooth and increasing, matching the expectation that higher debt burdens correspond to greater credit risk.
 
-	These feature-specific transformations are learned in a supervised manner, allowing the model to encode nonlinear predictive signals without imposing rigid assumptions. Importantly, the resulting transformed features are bounded, interpretable, and visualizable—each curve can be understood as the model’s best estimate of default probability as a function of a single input variable, enhancing both transparency and auditability of the modeling process.
+	These transformations are learned in a supervised manner, allowing the model to directly capture how each individual feature relates to default risk. Since the outputs are bounded between 0 and 1 and derived from probabilistic models, they remain interpretable and auditable, with clear visualizations available for each feature.
 
 
 6. **Model Training & Evaluation**
@@ -154,16 +152,16 @@ This section outlines the end-to-end modeling workflow, including data processin
    
 
 ## Results Summary
+The project evaluates predictive performance over LendingClub data from 2007 to 2018, testing across yearly train-test splits.
 
 - Spline-transformed features generally outperform raw features in both out-of-sample AUC and accuracy rate, demonstrating their ability to enhance the predictive performance of downstream models—especially when using a limited number of features.
 - By using a cubic spline basis with supervised logistic fitting, each feature is transformed into a scalar that encodes compressed nonlinear predictive information.
 - The effect of each transformed feature on the outcome remains interpretable, as the model's response curve can be directly visualized and understood in terms of estimated default probability.
 
 
-
 ## Future Extensions
 
-- To capture feature-level nonlinearity, one may apply cubic spline expansion directly to the original features within a logistic regression model. 
+- One alternative is to expand all features using cubic splines and train a single logistic regression on the combined basis.
 	- However, this leads to a significantly higher-dimensional model, as the number of basis terms increases rapidly with the number of features. While this may offer a better in-sample fit, it often results in severe overfitting, especially when the number of samples is limited. 
 	- In contrast, our supervised spline-logistic transformation produces scalar outputs that preserve interpretability, avoid unnecessary dimension inflation, and maintain robustness across time—without requiring the use of highly complex models.
 
